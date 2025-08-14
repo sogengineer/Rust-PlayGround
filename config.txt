@@ -1,0 +1,5 @@
+host=localhost
+port=8080
+database=myapp_db
+max_connections=100
+debug_mode=true
