@@ -3,46 +3,81 @@ mod binary_search_practice;
 use binary_search_practice::*;
 
 fn main() {
-    println!("=== 二分探索 復習問題 ===\n");
+    println!("=== 二分探索 復習問題 実行結果 ===\n");
     
     // 問題1: 最も近い値を探す
-    println!("問題1: 最も近い値を探す");
-    let arr1 = vec![1,2, 3,4, 5, 6, 7, 9,10, 11];
-    println!("{:?}", find_closest(&arr1, 6));
+    println!("【問題1: 最も近い値を探す】");
+    let arr1 = vec![1, 2, 3, 4, 5, 6, 7, 9, 10, 11];
     println!("配列: {:?}", arr1);
-    println!("target=6 に最も近い値は？");
-    println!("期待される答え: index 2 (値5)\n");
+    
+    let test_cases = vec![6, 8, 0, 12];
+    for target in test_cases {
+        if let Some(idx) = find_closest(&arr1, target) {
+            println!("target={} → index {} (値 {})", target, idx, arr1[idx]);
+        }
+    }
     
     // 問題2: 山型配列のピーク
-    println!("問題2: 山型配列のピーク");
-    let mountain = vec![1, 3, 5, 7, 6, 4, 2];
-    println!("山型配列: {:?}", mountain);
-    println!("ピークはどこ？");
-    println!("期待される答え: index 3 (値7)\n");
+    println!("\n【問題2: 山型配列のピーク】");
+    let mountains = vec![
+        vec![1, 3, 5, 7, 6, 4, 2],
+        vec![1, 2, 3, 4, 5],
+        vec![5, 4, 3, 2, 1],
+    ];
+    
+    for mountain in mountains {
+        print!("配列 {:?} → ", mountain);
+        if let Some(idx) = find_peak(&mountain) {
+            println!("index {} (値 {})", idx, mountain[idx]);
+        } else {
+            println!("None");
+        }
+    }
     
     // 問題3: 条件を満たす最小値
-    println!("問題3: 条件を満たす最小値");
-    println!("x^2 >= 100 を満たす最小の正整数は？");
-    println!("期待される答え: 10\n");
+    println!("\n【問題3: 条件を満たす最小値】");
+    
+    // x^2 >= 100
+    let result = binary_search_condition(1, 100, |x| x * x >= 100);
+    println!("x^2 >= 100 を満たす最小の正整数: {:?}", result);
+    if let Some(x) = result {
+        println!("  検証: {}^2 = {}", x, x * x);
+    }
+    
+    // x^3 >= 1000
+    let result = binary_search_condition(1, 100, |x| x * x * x >= 1000);
+    println!("x^3 >= 1000 を満たす最小の正整数: {:?}", result);
+    if let Some(x) = result {
+        println!("  検証: {}^3 = {}", x, x * x * x);
+    }
+    
+    // 2^n >= 1000
+    let result = binary_search_condition(1, 20, |n| {
+        2_i32.pow(n as u32) >= 1000
+    });
+    println!("2^n >= 1000 を満たす最小のn: {:?}", result);
+    if let Some(n) = result {
+        println!("  検証: 2^{} = {}", n, 2_i32.pow(n as u32));
+    }
     
     // 問題4: 行列での探索
-    println!("問題4: ソート済み行列での探索");
+    println!("\n【問題4: 行列での探索】");
+    let matrix = vec![
+        vec![1,  4,  7,  11],
+        vec![2,  5,  8,  12],
+        vec![3,  6,  9,  16],
+    ];
+    
     println!("行列:");
-    println!("[1,  4,  7,  11]");
-    println!("[2,  5,  8,  12]");
-    println!("[3,  6,  9,  16]");
-    println!("target=5 は存在する？");
-    println!("期待される答え: true\n");
+    for row in &matrix {
+        println!("  {:?}", row);
+    }
     
-    // ヒント
-    println!("=== ヒント ===");
-    println!("1. 最も近い値: lower_boundを使って挿入位置を見つけ、前後を比較");
-    println!("2. 山型配列: arr[mid] と arr[mid+1] の大小関係で判断");
-    println!("3. 条件を満たす最小値: 「答えを二分探索する」パターン");
-    println!("4. 行列探索: 右上または左下から始めて、値に応じて移動");
-    
-    println!("\n実装は src/binary_search_practice.rs にあります。");
-    println!("テストを実行: cargo test");
+    let targets = vec![5, 13, 1, 16];
+    for target in targets {
+        let result = search_matrix(&matrix, target);
+        println!("target={}: {}", target, result);
+    }
 }
 
 // ==========================================
@@ -140,8 +175,26 @@ fn find_peak(arr: &[i32]) -> Option<usize> {
     // - arr[mid] > arr[mid+1] なら、ピークは左側（またはmid）
     // - arr[mid] < arr[mid+1] なら、ピークは右側
     // - 境界チェックに注意
-    
-    todo!()
+    let mut left = 0;
+    let mut right = arr.len();
+    if right == 0 { 
+        return None 
+    };
+
+    while left < right {
+        let mid = left + (right - left) / 2;
+        if mid == 0 {
+            return Some(0)
+        }
+        
+        let left_hand_neighbor = mid - 1;
+        if arr[left_hand_neighbor] < arr[mid] {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    };
+    return Some(left - 1)
 }
 
 // ==========================================
@@ -156,8 +209,20 @@ where
     // - 条件を満たす最小値を探す（lower_boundの一般化）
     // - condition(mid)がtrueなら、答えはmid以下
     // - falseなら、答えはmidより大きい
-    
-    todo!()
+    let mut l = left;
+    let mut r = right;
+    let mut result = None;
+    while l <= r {
+        let mid = l + (r -l) / 2;
+        if condition(mid) {
+            r = mid - 1;
+            result = Some(mid);
+        } else {
+            l = mid + 1;
+        }
+    };
+
+    return result;
 }
 
 // ==========================================
@@ -170,8 +235,30 @@ fn search_matrix(matrix: &[Vec<i32>], target: i32) -> bool {
     // - 現在の値 > target なら左へ
     // - 現在の値 < target なら下へ
     // - O(m + n)で解ける
-    
-    todo!()
+    let mut i: usize = 0;
+    if matrix.len() == 0 {
+        return false
+    };
+    while i < matrix.len() {
+        if matrix[i].len() == 0 {
+            continue;
+        }
+        let mut left = 0;
+        let mut right = matrix[i].len() - 1;
+        while left <= right {
+            let mid = left + (right -left) / 2;
+            let vals = &matrix[i];
+            if vals[mid] == target {
+                return true
+            } else if vals[mid] > target {
+                right = mid - 1;
+            } else {
+                left = mid + 1;
+            }
+        }
+        i = i + 1;
+    };
+    return false;
 }
 
 /*
