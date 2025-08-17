@@ -1,120 +1,175 @@
-use std::collections::{VecDeque, HashMap};
+use std::collections::{VecDeque, HashSet};
 
-// TODO: BFSを使って、スタートから各マスへの最短距離を計算する関数
-fn bfs_distance_map(grid: &Vec<Vec<char>>, start: (isize, isize)) -> HashMap<(usize, usize), usize> {
+// =============================================================================
+// 🏝️ 島の探索問題: BFSとDFSの実装練習
+// =============================================================================
+//
+// 海と島で構成されたマップが与えられます。
+// '.' = 海、'#' = 陸地
+// 
+// 【問題】
+// 1. 島の数を数える（連結した陸地を1つの島とする）
+// 2. 最大の島の面積を求める
+// 3. 指定された2つの島の間の最短距離を求める
+//
+// この問題はDFSとBFS両方で解くことができます！
+// 両方のアプローチを実装してみましょう。
+
+// TODO: DFSを使って島を探索する関数
+fn dfs_explore_island(
+    grid: &Vec<Vec<char>>,
+    visited: &mut HashSet<(usize, usize)>,
+    start_row: usize,
+    start_col: usize,
+) -> usize {
     // ヒント:
-    // 1. キューとvisitedを準備
-    // 2. スタート地点をキューに入れる
-    // 3. BFSで探索しながら、各マスへの距離を記録
-    // 4. 壁('#')は通れない、'.'と'S'と'T'は通れる
-    // 5. 結果をHashMapで返す（座標 → 距離）
-    let mut queue: VecDeque<((isize, isize), isize)> = VecDeque::new();
-    let mut visited: HashMap<(isize, isize), bool> = HashMap::new();
-    let mut distances = HashMap::new();
-    let directions:[(i8, i8);4] = [(0,1),(1,0),(0,-1),(-1,0)];
-    queue.push_back((start,0));
-    visited.insert(start, true);
-    while !queue.is_empty() {
-        for direction in directions {
-            let front = queue.pop_front().unwrap();
-            let (row, col) = front as ((isize, isize), isize);
-            let (next_r, next_c) = direction;
-            
-
-            
-        }
-    }
-
+    // 1. スタック（Vec）を使うか、再帰で実装
+    // 2. start位置から始めて、連結している全ての陸地を訪問
+    // 3. 訪問した陸地の数（面積）を返す
+    // 4. visitedに訪問済みを記録（他の島と区別するため）
     
-    // TODO: ここに実装
-    
-    distances
+    // TODO: ここにDFSの実装を書く
+    0
 }
 
-// TODO: 複数のターゲットの中で最も近いものを見つける関数
-fn find_nearest_target(distances: &HashMap<(usize, usize), usize>, targets: &Vec<(usize, usize)>) -> Option<((usize, usize), usize)> {
+// TODO: DFSを使って全ての島を見つける関数
+fn count_islands_dfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
     // ヒント:
-    // 1. 各ターゲットについて、distancesから距離を取得
-    // 2. 到達可能なターゲットの中で最小距離のものを返す
-    // 3. どのターゲットにも到達できない場合はNone
+    // 1. グリッド全体をスキャン
+    // 2. 未訪問の陸地を見つけたら、dfs_explore_islandで探索
+    // 3. 島の数と最大面積を追跡
+    // 返り値: (島の数, 最大面積)
     
-    // TODO: ここに実装
+    // TODO: ここに実装を書く
+    (0, 0)
+}
+
+// TODO: BFSを使って島を探索する関数
+fn bfs_explore_island(
+    grid: &Vec<Vec<char>>,
+    visited: &mut HashSet<(usize, usize)>,
+    start_row: usize,
+    start_col: usize,
+) -> usize {
+    // ヒント:
+    // 1. キュー（VecDeque）を使う
+    // 2. start位置から始めて、層ごとに探索
+    // 3. 訪問した陸地の数（面積）を返す
+    // 4. visitedに訪問済みを記録
     
+    // TODO: ここにBFSの実装を書く
+    0
+}
+
+// TODO: BFSを使って全ての島を見つける関数
+fn count_islands_bfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
+    // ヒント:
+    // count_islands_dfsと同じロジックだが、
+    // dfs_explore_islandの代わりにbfs_explore_islandを使う
+    
+    // TODO: ここに実装を書く
+    (0, 0)
+}
+
+// TODO: BFSを使って2つの島の間の最短距離を求める
+fn shortest_distance_between_islands(
+    grid: &Vec<Vec<char>>,
+    island1_start: (usize, usize),
+    island2_start: (usize, usize),
+) -> Option<usize> {
+    // ヒント:
+    // 1. まず島1の全ての陸地を特定（BFSかDFS）
+    // 2. 島1の全ての陸地を開始点として、多始点BFSを実行
+    // 3. 海を渡って島2の陸地に到達するまでの最短距離を求める
+    // 4. 到達できない場合はNone
+    
+    // TODO: ここに実装を書く
     None
 }
 
-fn main() {
-    println!("=== BFS学習: 最も近い宝物を探す問題 ===\n");
+// ヘルパー関数: 4方向の隣接マスを取得
+fn get_neighbors(row: usize, col: usize, rows: usize, cols: usize) -> Vec<(usize, usize)> {
+    let mut neighbors = Vec::new();
+    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
     
-    // マップの定義
-    // 'S' = スタート, 'T' = 宝物（ターゲット）, '#' = 壁, '.' = 通路
+    for (dr, dc) in directions {
+        let new_row = row as isize + dr;
+        let new_col = col as isize + dc;
+        
+        if new_row >= 0 && new_row < rows as isize && 
+           new_col >= 0 && new_col < cols as isize {
+            neighbors.push((new_row as usize, new_col as usize));
+        }
+    }
+    
+    neighbors
+}
+
+fn main() {
+    println!("=== 🏝️ 島の探索問題: DFSとBFS両方で解いてみよう！ ===\n");
+    
+    // テストマップ
     let grid = vec![
-        vec!['#', '#', '#', '#', '#', '#', '#', '#', '#'],
-        vec!['#', 'S', '.', '.', '#', 'T', '.', '.', '#'],
-        vec!['#', '#', '#', '.', '#', '.', '#', '.', '#'],
-        vec!['#', 'T', '.', '.', '.', '.', '#', '.', '#'],
-        vec!['#', '.', '#', '#', '#', '.', '#', '.', '#'],
-        vec!['#', '.', '.', '.', '.', '.', '.', '.', '#'],
-        vec!['#', '#', '#', '.', '#', '#', '#', 'T', '#'],
-        vec!['#', '#', '#', '#', '#', '#', '#', '#', '#'],
+        vec!['#', '#', '.', '.', '.', '.', '#', '#', '#'],
+        vec!['#', '.', '.', '.', '.', '.', '#', '.', '#'],
+        vec!['.', '.', '.', '#', '#', '.', '#', '#', '#'],
+        vec!['.', '.', '.', '#', '#', '.', '.', '.', '.'],
+        vec!['.', '#', '.', '.', '.', '.', '.', '.', '.'],
+        vec!['.', '#', '#', '.', '.', '#', '#', '#', '.'],
+        vec!['.', '.', '.', '.', '.', '#', '.', '#', '.'],
+        vec!['#', '#', '#', '.', '.', '#', '#', '#', '.'],
+        vec!['#', '.', '#', '.', '.', '.', '.', '.', '.'],
     ];
     
-    println!("マップ:");
+    println!("マップ（'#' = 陸地, '.' = 海）:");
     for row in &grid {
         println!("{}", row.iter().collect::<String>());
     }
     println!();
     
-    // スタート地点とターゲット（宝物）の位置を探す
-    let mut start = (0, 0);
-    let mut targets = Vec::new();
-    
-    for i in 0..grid.len() {
-        for j in 0..grid[0].len() {
-            if grid[i][j] == 'S' {
-                start = (i, j);
-                println!("スタート: ({}, {})", i, j);
-            } else if grid[i][j] == 'T' {
-                targets.push((i, j));
-                println!("宝物{}: ({}, {})", targets.len(), i, j);
-            }
-        }
-    }
+    // DFSでの解法
+    println!("=== DFSでの解法 ===");
+    let (islands_dfs, max_area_dfs) = count_islands_dfs(&grid);
+    println!("島の数: {}", islands_dfs);
+    println!("最大の島の面積: {}", max_area_dfs);
     println!();
     
-    // TODO: 実装が完成したらコメントを外す
-    // let distances = bfs_distance_map(&grid, start);
-    // 
-    // println!("各宝物への距離:");
-    // for (idx, target) in targets.iter().enumerate() {
-    //     match distances.get(target) {
-    //         Some(dist) => println!("  宝物{}: 距離 {}", idx + 1, dist),
-    //         None => println!("  宝物{}: 到達不可能", idx + 1),
-    //     }
-    // }
-    // println!();
-    // 
-    // match find_nearest_target(&distances, &targets) {
-    //     Some((pos, dist)) => {
-    //         println!("最も近い宝物: ({}, {}) [距離: {}]", pos.0, pos.1, dist);
-    //     },
-    //     None => {
-    //         println!("どの宝物にも到達できません");
-    //     }
-    // }
+    // BFSでの解法
+    println!("=== BFSでの解法 ===");
+    let (islands_bfs, max_area_bfs) = count_islands_bfs(&grid);
+    println!("島の数: {}", islands_bfs);
+    println!("最大の島の面積: {}", max_area_bfs);
+    println!();
     
-    println!("\n問題説明:");
-    println!("- BFSで全マスへの最短距離を計算");
-    println!("- 複数の宝物の中で最も近いものを見つける");
-    println!("- これはPaizaでよく出る「最も近い目標を探す」パターン");
+    // 島間の最短距離（BFS）
+    println!("=== 島間の最短距離 ===");
+    // 左上の島(0,0)と中央の島(3,3)の間の距離
+    match shortest_distance_between_islands(&grid, (0, 0), (3, 3)) {
+        Some(distance) => println!("島(0,0)と島(3,3)の間の最短距離: {}", distance),
+        None => println!("島(0,0)と島(3,3)は接続できません"),
+    }
     
     println!("\n実装のヒント:");
-    println!("1. bfs_distance_map:");
-    println!("   - 通常のBFSだが、ゴールで止まらない");
-    println!("   - 全ての到達可能なマスへの距離を計算");
-    println!("   - HashMapに(座標, 距離)を保存");
-    println!("\n2. find_nearest_target:");
-    println!("   - targets.iter()でループ");
-    println!("   - distances.get()で距離を取得");
-    println!("   - 最小値を更新していく");
+    println!("1. DFS実装:");
+    println!("   - 再帰またはスタックを使用");
+    println!("   - 深さ優先で島を探索");
+    println!("   - visitedで訪問済みを管理");
+    println!();
+    println!("2. BFS実装:");
+    println!("   - キュー（VecDeque）を使用");
+    println!("   - 幅優先で島を探索");
+    println!("   - 同じくvisitedで管理");
+    println!();
+    println!("3. 最短距離:");
+    println!("   - 多始点BFSが効率的");
+    println!("   - 島1の全陸地からスタート");
+    println!("   - 最初に島2に到達した時点が最短");
+    println!();
+    println!("両方の手法で同じ結果が得られることを確認してください！");
+    
+    // デバッグ用: get_neighbors関数のテスト
+    println!("\nデバッグ: (1,1)の隣接マス:");
+    for (r, c) in get_neighbors(1, 1, 9, 9) {
+        println!("  ({}, {})", r, c);
+    }
 }
