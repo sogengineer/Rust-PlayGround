@@ -1,4 +1,4 @@
-use std::collections::{VecDeque, HashSet};
+use std::{collections::{HashSet, VecDeque}, isize};
 
 // =============================================================================
 // 🏝️ 島の探索問題: BFSとDFSの実装練習
@@ -22,8 +22,6 @@ fn dfs_explore_island(
     start_row: usize,
     start_col: usize,
 ) -> usize {
-    println!("start");
-    println!("{},{}", start_row, start_col);
     // ヒント:
     // 1. スタック（Vec）を使うか、再帰で実装
     // 2. start位置から始めて、連結している全ての陸地を訪問
@@ -31,25 +29,21 @@ fn dfs_explore_island(
     // 4. visitedに訪問済みを記録（他の島と区別するため）
     visited.insert((start_row, start_col));
     let directions: [(isize, isize); 4] = [(1,0),(0,1),(-1,0),(0,-1)];
-    let mut size = 0;
-    println!("for にはいる");
-    // print!("({},{})", start_row, start_col);
+    let mut size = 1;
     for direction in directions {
         let (next_row, next_col) = direction;
         let target_row = ( start_row as isize ) + next_row;
         let target_col = ( start_col as isize ) + next_col;
         let is_visited = visited.contains(&(target_row as usize, target_col as usize));
-        println!("({},{})", target_row, target_col);
-        println!("({},{})", grid[target_row as usize][target_col as usize] == '.', is_visited);
-        if target_row < 0 || target_col < 0 || is_visited || grid[target_row as usize][target_col as usize] == '.' {
-            println!("ここでブレイク");
-            return size
+        if target_row < 0 || target_col < 0 || is_visited{
+            continue;
         }
-        println!("{}", grid[target_row as usize][target_col as usize]);
+        if (grid.len() - 1 ) < target_row as usize || (grid[target_row as usize].len() - 1) < target_col as usize {
+            continue;
+        }
         if grid[target_row as usize][target_col as usize]  == '#' {
             size = size + dfs_explore_island(grid, visited, target_row as usize, target_col as usize);
         } 
-        break;
     }
     return size
 }
@@ -61,14 +55,12 @@ fn count_islands_dfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
     // 2. 未訪問の陸地を見つけたら、dfs_explore_islandで探索
     // 3. 島の数と最大面積を追跡
     // 返り値: (島の数, 最大面積)
-    let mut i = 0;
-    let mut j = 0;
     let mut max_size = 0;
     let mut island_count = 0;
     let mut visited: HashSet<(usize,usize), > = HashSet::new();
     let mut result = (0,0);
-    while i < grid.len() {
-        while j < grid[i].len() {
+    for i in 0..grid.len() {
+        for j in 0..grid[i].len() {
             let is_visited = visited.contains(&(i,j));
             let is_sea = grid[i][j] == '.';
             if is_visited || is_sea {
@@ -76,16 +68,13 @@ fn count_islands_dfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
             } 
             if grid[i][j] == '#' {
                 let size = dfs_explore_island(grid, &mut visited, i, j);
-                println!("{}", size);
-                island_count += 1;
+                island_count = island_count + 1;
                 if size > max_size {
                     max_size = size;
                 }
-                result = (island_count, max_size);
             };
-            j = j+1;
+            result = (island_count, max_size);
         }
-        i = i+1;
     };
     return result;
 }
@@ -102,9 +91,38 @@ fn bfs_explore_island(
     // 2. start位置から始めて、層ごとに探索
     // 3. 訪問した陸地の数（面積）を返す
     // 4. visitedに訪問済みを記録
-    
-    // TODO: ここにBFSの実装を書く
-    0
+    let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
+    queue.push_back((start_row, start_col));
+    visited.insert((start_row, start_col));
+    let directions:[(isize, isize);4] = [(0,1),(1,0),(0,-1),(-1,0)];
+    let mut result = 1;
+    while !queue.is_empty() {
+        let (pop_row, pop_col) = queue.pop_front().unwrap();
+        for direction in directions {
+            let (next_r, next_c) = direction;
+            let target_row = pop_row as isize + next_r;
+            let target_col = pop_col as isize + next_c;
+            if target_row < 0 || target_col < 0 {
+                continue;
+            }
+
+            if visited.contains(&(target_row as usize, target_col as usize)) {
+                continue;
+            }
+
+            if target_row as usize > grid.len() - 1 || target_col as usize > grid[target_row as usize].len() - 1 {
+                continue;
+            }
+
+            if grid[target_row as usize][target_col as usize] == '.' {
+                continue;
+            }
+            queue.push_back((target_row as usize, target_col as usize));
+            visited.insert((target_row as usize, target_col as usize));
+            result += 1;
+        }
+    }
+    return result
 }
 
 // TODO: BFSを使って全ての島を見つける関数
@@ -112,9 +130,28 @@ fn count_islands_bfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
     // ヒント:
     // count_islands_dfsと同じロジックだが、
     // dfs_explore_islandの代わりにbfs_explore_islandを使う
-    
-    // TODO: ここに実装を書く
-    (0, 0)
+    let mut max_size = 0;
+    let mut island_count = 0;
+    let mut visited: HashSet<(usize,usize), > = HashSet::new();
+    let mut result = (0,0);
+    for i in 0..grid.len() {
+        for j in 0..grid[i].len() {
+            let is_visited = visited.contains(&(i,j));
+            let is_sea = grid[i][j] == '.';
+            if is_visited || is_sea {
+                continue;
+            } 
+            if grid[i][j] == '#' {
+                let size = bfs_explore_island(grid, &mut visited, i, j);
+                island_count = island_count + 1;
+                if size > max_size {
+                    max_size = size;
+                }
+            };
+            result = (island_count, max_size);
+        }
+    };
+    return result;
 }
 
 // TODO: BFSを使って2つの島の間の最短距離を求める
