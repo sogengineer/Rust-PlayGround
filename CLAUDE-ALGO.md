@@ -123,17 +123,24 @@
 
 ## 現在の学習状況
 
-### 学習中
-- [ ] 深度優先探索（DFS）・幅優先探索（BFS） 🔄
+### 完了 ✅
+- [x] **二分探索** (2025-01-12)
+  - `src/binary_search_practice/binary_search_basic.rs`
+  - `src/binary_search_practice/binary_search_practice.rs`
+  
+- [x] **深度優先探索（DFS）・幅優先探索（BFS）** (2025-01-21)
+  - DFS: `src/dfs_bfs_practice/island_counter_dfs.rs`
+  - BFS: `src/dfs_bfs_practice/maze_shortest_path_bfs.rs`
+  - BFS: `src/dfs_bfs_practice/bfs_nearest_target.rs`
+  - 総合: `src/dfs_bfs_practice/island_exploration.rs`
 
-### 完了
-- [x] 二分探索 ✅
+### 次に学習予定 📚
+- [ ] **ダイクストラ法** - 重み付きグラフの最短経路問題
+- [ ] **Union-Find** - 素集合データ構造、グループ管理
 
 ### 未着手
 - [ ] 動的計画法（DP）
 - [ ] ソートアルゴリズム
-- [ ] ダイクストラ法
-- [ ] Union-Find
 - [ ] 累積和・いもす法
 - [ ] 貪欲法
 - [ ] セグメント木・BIT

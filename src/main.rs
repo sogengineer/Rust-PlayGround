@@ -1,258 +1,283 @@
-use std::{collections::{HashSet, VecDeque}, isize};
+use std::collections::BinaryHeap;
+use std::cmp::Reverse;
 
 // =============================================================================
-// 🏝️ 島の探索問題: BFSとDFSの実装練習
+// 📦 配送ネットワークの最適化: ダイクストラ法の実装
 // =============================================================================
 //
-// 海と島で構成されたマップが与えられます。
-// '.' = 海、'#' = 陸地
-// 
-// 【問題】
-// 1. 島の数を数える（連結した陸地を1つの島とする）
-// 2. 最大の島の面積を求める
-// 3. 指定された2つの島の間の最短距離を求める
+// 配送センター間の輸送コストを最小化する問題です。
+// 重み付きグラフの最短経路問題をダイクストラ法で解きます。
 //
-// この問題はDFSとBFS両方で解くことができます！
-// 両方のアプローチを実装してみましょう。
+// グラフ構造:
+//     A(0)
+//    /   \
+//   5     2
+//  /       \
+// B(1)--3--C(2)
+//  \      / \
+//   7    1   4
+//    \  /     \
+//    D(3)-----E(4)
+//         6
 
-// TODO: DFSを使って島を探索する関数
-fn dfs_explore_island(
-    grid: &Vec<Vec<char>>,
-    visited: &mut HashSet<(usize, usize)>,
-    start_row: usize,
-    start_col: usize,
-) -> usize {
-    // ヒント:
-    // 1. スタック（Vec）を使うか、再帰で実装
-    // 2. start位置から始めて、連結している全ての陸地を訪問
-    // 3. 訪問した陸地の数（面積）を返す
-    // 4. visitedに訪問済みを記録（他の島と区別するため）
-    visited.insert((start_row, start_col));
-    let directions: [(isize, isize); 4] = [(1,0),(0,1),(-1,0),(0,-1)];
-    let mut size = 1;
-    for direction in directions {
-        let (next_row, next_col) = direction;
-        let target_row = ( start_row as isize ) + next_row;
-        let target_col = ( start_col as isize ) + next_col;
-        let is_visited = visited.contains(&(target_row as usize, target_col as usize));
-        if target_row < 0 || target_col < 0 || is_visited{
+type Graph = Vec<Vec<(usize, u32)>>;
+
+// ダイクストラ法の実装（基本版）
+fn dijkstra(graph: &Graph, start: usize) -> Vec<u32> {
+    // グラフのノード数を取得（例：5個のノードA,B,C,D,E）
+    let n = graph.len();
+    
+    // 各ノードへの最短距離を記録する配列を作成
+    // 初期値はu32::MAX（無限大の代わり）で埋める
+    // distances[0]=∞, distances[1]=∞, ..., distances[4]=∞
+    let mut distances = vec![u32::MAX; n];
+    
+    // 優先度付きキュー（最小ヒープとして使用）
+    // Reverseで包むことで、コストが小さい順に取り出せる
+    let mut heap = BinaryHeap::new();
+    
+    // 始点（start）への距離は0に設定
+    // 例：start=0(A)なら、distances[0] = 0
+    distances[start] = 0;
+    
+    // ヒープに始点を追加
+    // Reverse((コスト0, ノード番号start))の形で追加
+    // 例：Reverse((0, 0)) → コスト0でノードAを追加
+    heap.push(Reverse((0, start)));
+    
+    // ヒープが空になるまで処理を繰り返す
+    while let Some(Reverse((cost, node))) = heap.pop() {
+        // 【重要な最適化】
+        // もし取り出したコストが、既に記録されている最短距離より大きければスキップ
+        // （同じノードが異なるコストで複数回ヒープに入る可能性があるため）
+        // 例：distances[1]=5なのに、cost=10のB(1)が出てきたらスキップ
+        if cost > distances[node] {
             continue;
         }
-        if (grid.len() - 1 ) < target_row as usize || (grid[target_row as usize].len() - 1) < target_col as usize {
-            continue;
-        }
-        if grid[target_row as usize][target_col as usize]  == '#' {
-            size = size + dfs_explore_island(grid, visited, target_row as usize, target_col as usize);
-        } 
-    }
-    return size
-}
-
-// TODO: DFSを使って全ての島を見つける関数
-fn count_islands_dfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
-    // ヒント:
-    // 1. グリッド全体をスキャン
-    // 2. 未訪問の陸地を見つけたら、dfs_explore_islandで探索
-    // 3. 島の数と最大面積を追跡
-    // 返り値: (島の数, 最大面積)
-    let mut max_size = 0;
-    let mut island_count = 0;
-    let mut visited: HashSet<(usize,usize), > = HashSet::new();
-    let mut result = (0,0);
-    for i in 0..grid.len() {
-        for j in 0..grid[i].len() {
-            let is_visited = visited.contains(&(i,j));
-            let is_sea = grid[i][j] == '.';
-            if is_visited || is_sea {
-                continue;
-            } 
-            if grid[i][j] == '#' {
-                let size = dfs_explore_island(grid, &mut visited, i, j);
-                island_count = island_count + 1;
-                if size > max_size {
-                    max_size = size;
-                }
-            };
-            result = (island_count, max_size);
-        }
-    };
-    return result;
-}
-
-// TODO: BFSを使って島を探索する関数
-fn bfs_explore_island(
-    grid: &Vec<Vec<char>>,
-    visited: &mut HashSet<(usize, usize)>,
-    start_row: usize,
-    start_col: usize,
-) -> usize {
-    // ヒント:
-    // 1. キュー（VecDeque）を使う
-    // 2. start位置から始めて、層ごとに探索
-    // 3. 訪問した陸地の数（面積）を返す
-    // 4. visitedに訪問済みを記録
-    let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
-    queue.push_back((start_row, start_col));
-    visited.insert((start_row, start_col));
-    let directions:[(isize, isize);4] = [(0,1),(1,0),(0,-1),(-1,0)];
-    let mut result = 1;
-    while !queue.is_empty() {
-        let (pop_row, pop_col) = queue.pop_front().unwrap();
-        for direction in directions {
-            let (next_r, next_c) = direction;
-            let target_row = pop_row as isize + next_r;
-            let target_col = pop_col as isize + next_c;
-            if target_row < 0 || target_col < 0 {
-                continue;
-            }
-
-            if visited.contains(&(target_row as usize, target_col as usize)) {
-                continue;
-            }
-
-            if target_row as usize > grid.len() - 1 || target_col as usize > grid[target_row as usize].len() - 1 {
-                continue;
-            }
-
-            if grid[target_row as usize][target_col as usize] == '.' {
-                continue;
-            }
-            queue.push_back((target_row as usize, target_col as usize));
-            visited.insert((target_row as usize, target_col as usize));
-            result += 1;
-        }
-    }
-    return result
-}
-
-// TODO: BFSを使って全ての島を見つける関数
-fn count_islands_bfs(grid: &Vec<Vec<char>>) -> (usize, usize) {
-    // ヒント:
-    // count_islands_dfsと同じロジックだが、
-    // dfs_explore_islandの代わりにbfs_explore_islandを使う
-    let mut max_size = 0;
-    let mut island_count = 0;
-    let mut visited: HashSet<(usize,usize), > = HashSet::new();
-    let mut result = (0,0);
-    for i in 0..grid.len() {
-        for j in 0..grid[i].len() {
-            let is_visited = visited.contains(&(i,j));
-            let is_sea = grid[i][j] == '.';
-            if is_visited || is_sea {
-                continue;
-            } 
-            if grid[i][j] == '#' {
-                let size = bfs_explore_island(grid, &mut visited, i, j);
-                island_count = island_count + 1;
-                if size > max_size {
-                    max_size = size;
-                }
-            };
-            result = (island_count, max_size);
-        }
-    };
-    return result;
-}
-
-// TODO: BFSを使って2つの島の間の最短距離を求める
-fn shortest_distance_between_islands(
-    grid: &Vec<Vec<char>>,
-    island1_start: (usize, usize),
-    island2_start: (usize, usize),
-) -> Option<usize> {
-    // ヒント:
-    // 1. まず島1の全ての陸地を特定（BFSかDFS）
-    // 2. 島1の全ての陸地を開始点として、多始点BFSを実行
-    // 3. 海を渡って島2の陸地に到達するまでの最短距離を求める
-    // 4. 到達できない場合はNone
-    
-    // TODO: ここに実装を書く
-    None
-}
-
-// ヘルパー関数: 4方向の隣接マスを取得
-fn get_neighbors(row: usize, col: usize, rows: usize, cols: usize) -> Vec<(usize, usize)> {
-    let mut neighbors = Vec::new();
-    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-    
-    for (dr, dc) in directions {
-        let new_row = row as isize + dr;
-        let new_col = col as isize + dc;
         
-        if new_row >= 0 && new_row < rows as isize && 
-           new_col >= 0 && new_col < cols as isize {
-            neighbors.push((new_row as usize, new_col as usize));
+        // 現在のノードから行ける全ての隣接ノードをチェック
+        // graph[node]には [(隣接ノード, エッジのコスト), ...] が入っている
+        // 例：node=0(A)なら、graph[0] = [(1, 5), (2, 2)] → Bへ5、Cへ2
+        for &(next_node, edge_cost) in &graph[node] {
+            // 新しいコスト = 現在のノードまでのコスト + エッジのコスト
+            // 例：A(cost=0) → B(edge_cost=5) なら new_cost = 0 + 5 = 5
+            let new_cost = cost + edge_cost;
+
+            // もし新しいコストが、記録されている距離より小さければ更新
+            // 例：distances[1]=∞ で new_cost=5 なら更新する
+            if new_cost < distances[next_node] {
+                // 最短距離を更新
+                distances[next_node] = new_cost;
+                
+                // ヒープに新しいコストでこのノードを追加
+                // 例：Reverse((5, 1)) → コスト5でノードBを追加
+                heap.push(Reverse((new_cost, next_node)))
+            }
         }
     }
     
-    neighbors
+    // 全ノードへの最短距離の配列を返す
+    // 例：[0, 5, 2, 3, 6] → A:0, B:5, C:2, D:3, E:6
+    return distances;
+}
+
+// 経路復元機能付きダイクストラ法
+fn dijkstra_with_path(graph: &Graph, start: usize) -> (Vec<u32>, Vec<Option<usize>>) {
+    // グラフのノード数を取得
+    let n = graph.len();
+    
+    // 各ノードへの最短距離を記録する配列（初期値は無限大）
+    let mut distances = vec![u32::MAX; n];
+    
+    // 【重要】各ノードに「どのノードから来たか」を記録する配列
+    // previous[i] = Some(j) → ノードiにはノードjから来た
+    // previous[i] = None → ノードiは未到達または始点
+    // 例：previous = [None, Some(0), Some(0), Some(2), Some(2)]
+    //     → A:始点, B:Aから, C:Aから, D:Cから, E:Cから
+    let mut previous: Vec<Option<usize>> = vec![None; n];
+    
+    // 優先度付きキュー（最小ヒープ）
+    let mut heap = BinaryHeap::new();
+    
+    // 始点の距離を0に設定
+    distances[start] = 0;
+    
+    // ヒープに始点を追加
+    // Reverse((0, 0)) → コスト0でノードAを追加
+    heap.push(Reverse((0,start)));
+    
+    // ヒープが空になるまで処理
+    while let Some(Reverse((cost, node))) = heap.pop() {
+        // 既に処理済みならスキップ
+        // （同じノードが複数回ヒープに入る可能性があるため）
+        if cost > distances[node] {
+            continue;
+        }
+        
+        // 現在のノードから行ける全ての隣接ノードをチェック
+        for &(next_node, edge_cost) in &graph[node] {
+            // 新しいコストを計算
+            // 例：C(cost=2) → D(edge_cost=1) なら new_cost = 2 + 1 = 3
+            let new_cost = cost + edge_cost;
+            
+            // より短い経路が見つかったら更新
+            if new_cost < distances[next_node] {
+                // 最短距離を更新
+                distances[next_node] = new_cost;
+                
+                // 【重要】どこから来たかを記録
+                // 例：ノードD(3)に、ノードC(2)から来た場合
+                //     previous[3] = Some(2)
+                previous[next_node] = Some(node);
+                
+                // ヒープに新しいコストでこのノードを追加
+                heap.push(Reverse((new_cost, next_node)));
+            }
+        }
+    }
+    
+    // 最短距離の配列と、経路復元用の配列を両方返す
+    // 例：([0, 5, 2, 3, 6], [None, Some(0), Some(0), Some(2), Some(2)])
+    //     distances: A=0, B=5, C=2, D=3, E=6
+    //     previous: A=始点, B=Aから, C=Aから, D=Cから, E=Cから
+    (distances, previous)
+}
+
+// 経路を復元する関数
+fn reconstruct_path(previous: &[Option<usize>], start: usize, end: usize) -> Vec<usize> {
+    // 経路を格納するベクター
+    let mut path = Vec::new();
+    
+    // 現在のノード（最初は終点から開始）
+    let mut current = end;
+    
+    // 終点から始点まで逆向きに辿る
+    // 例：A(0)→D(3)の経路を復元する場合
+    //     previous = [None, Some(0), Some(0), Some(2), ...]
+    //     D(3)はC(2)から来た、C(2)はA(0)から来た
+    while current != start {
+        // 現在のノードを経路に追加
+        // 1回目：path = [3] (D)
+        // 2回目：path = [3, 2] (D, C)
+        path.push(current);
+        
+        // previous配列から「どこから来たか」を取得
+        match previous[current] {
+            // Some(prev)の場合：prevノードから来た
+            // 例：previous[3] = Some(2) → D(3)はC(2)から来た
+            Some(prev) => {
+                // currentをprevに更新して、さらに遡る
+                // 1回目：current = 3 → 2
+                // 2回目：current = 2 → 0
+                current = prev;
+            },
+            // Noneの場合：経路が存在しない（到達不可能）
+            None => return vec![],
+        }
+    }
+    
+    // 最後に始点を追加
+    // path = [3, 2, 0] (D, C, A)
+    path.push(start);
+    
+    // 逆順になっているので正順に直す
+    // path = [3, 2, 0] → [0, 2, 3] (A, C, D)
+    path.reverse();
+    
+    // 完成した経路を返す
+    // 例：[0, 2, 3] → A→C→Dの経路
+    path
+}
+
+// ヘルパー関数: ノード番号を文字に変換
+fn node_to_char(node: usize) -> char {
+    (b'A' + node as u8) as char
+}
+
+// ヘルパー関数: 経路を文字列に変換
+fn path_to_string(path: &[usize]) -> String {
+    path.iter()
+        .map(|&node| node_to_char(node).to_string())
+        .collect::<Vec<_>>()
+        .join(" → ")
 }
 
 fn main() {
-    println!("=== 🏝️ 島の探索問題: DFSとBFS両方で解いてみよう！ ===\n");
+    println!("=== 📦 配送ネットワークの最適化 ===");
+    println!("ダイクストラ法による最短経路探索");
+    println!("\n練習問題は src/dijkstra_practice.rs にあります！");
+    println!("実行: cargo run --bin dijkstra_practice\n");
     
-    // テストマップ
-    let grid = vec![
-        vec!['#', '#', '.', '.', '.', '.', '#', '#', '#'],
-        vec!['#', '.', '.', '.', '.', '.', '#', '.', '#'],
-        vec!['.', '.', '.', '#', '#', '.', '#', '#', '#'],
-        vec!['.', '.', '.', '#', '#', '.', '.', '.', '.'],
-        vec!['.', '#', '.', '.', '.', '.', '.', '.', '.'],
-        vec!['.', '#', '#', '.', '.', '#', '#', '#', '.'],
-        vec!['.', '.', '.', '.', '.', '#', '.', '#', '.'],
-        vec!['#', '#', '#', '.', '.', '#', '#', '#', '.'],
-        vec!['#', '.', '#', '.', '.', '.', '.', '.', '.'],
+    // グラフの構築（隣接リスト表現）
+    let graph: Graph = vec![
+        vec![(1, 5), (2, 2)],           // A: B(5), C(2)
+        vec![(0, 5), (2, 3), (3, 7)],   // B: A(5), C(3), D(7)
+        vec![(0, 2), (1, 3), (3, 1), (4, 4)], // C: A(2), B(3), D(1), E(4)
+        vec![(1, 7), (2, 1), (4, 6)],   // D: B(7), C(1), E(6)
+        vec![(2, 4), (3, 6)],           // E: C(4), D(6)
     ];
     
-    println!("マップ（'#' = 陸地, '.' = 海）:");
-    for row in &grid {
-        println!("{}", row.iter().collect::<String>());
+    println!("配送センター間のネットワーク:");
+    println!("    A(0)");
+    println!("   /   \\");
+    println!("  5     2");
+    println!(" /       \\");
+    println!("B(1)--3--C(2)");
+    println!(" \\      / \\");
+    println!("  7    1   4");
+    println!("   \\  /     \\");
+    println!("   D(3)-----E(4)");
+    println!("        6");
+    println!();
+    
+    // 基本のダイクストラ法
+    println!("=== 基本実装: センターAからの最小コスト ===");
+    let distances = dijkstra(&graph, 0);
+    
+    for (i, &dist) in distances.iter().enumerate() {
+        if dist == u32::MAX {
+            println!("A → {}: 到達不可能", node_to_char(i));
+        } else {
+            println!("A → {}: {}万円", node_to_char(i), dist);
+        }
     }
     println!();
     
-    // DFSでの解法
-    println!("=== DFSでの解法 ===");
-    let (islands_dfs, max_area_dfs) = count_islands_dfs(&grid);
-    println!("島の数: {}", islands_dfs);
-    println!("最大の島の面積: {}", max_area_dfs);
+    // 経路復元付きダイクストラ法
+    println!("=== 経路復元: 最短経路の表示 ===");
+    let (distances_with_path, previous) = dijkstra_with_path(&graph, 0);
+    // println!("{:?}",(distances_with_path, previous));
+    for end in 1..graph.len() {
+        if distances_with_path[end] != u32::MAX {
+            let path = reconstruct_path(&previous, 0, end);
+            if !path.is_empty() {
+                println!("A → {}: {} (コスト: {}万円)",
+                    node_to_char(end),
+                    path_to_string(&path),
+                    distances_with_path[end]
+                );
+            }
+        }
+    }
     println!();
     
-    // BFSでの解法
-    println!("=== BFSでの解法 ===");
-    let (islands_bfs, max_area_bfs) = count_islands_bfs(&grid);
-    println!("島の数: {}", islands_bfs);
-    println!("最大の島の面積: {}", max_area_bfs);
-    println!();
+    // 応用: 任意の2点間の最短経路
+    println!("=== 応用: B→Eの最短経路 ===");
+    let (distances_from_b, previous_from_b) = dijkstra_with_path(&graph, 1);
+    let path_b_to_e = reconstruct_path(&previous_from_b, 1, 4);
     
-    // 島間の最短距離（BFS）
-    println!("=== 島間の最短距離 ===");
-    // 左上の島(0,0)と中央の島(3,3)の間の距離
-    match shortest_distance_between_islands(&grid, (0, 0), (3, 3)) {
-        Some(distance) => println!("島(0,0)と島(3,3)の間の最短距離: {}", distance),
-        None => println!("島(0,0)と島(3,3)は接続できません"),
+    if !path_b_to_e.is_empty() {
+        println!("B → E: {} (コスト: {}万円)",
+            path_to_string(&path_b_to_e),
+            distances_from_b[4]
+        );
+    } else {
+        println!("B → E: 経路が見つかりません");
     }
     
-    println!("\n実装のヒント:");
-    println!("1. DFS実装:");
-    println!("   - 再帰またはスタックを使用");
-    println!("   - 深さ優先で島を探索");
-    println!("   - visitedで訪問済みを管理");
-    println!();
-    println!("2. BFS実装:");
-    println!("   - キュー（VecDeque）を使用");
-    println!("   - 幅優先で島を探索");
-    println!("   - 同じくvisitedで管理");
-    println!();
-    println!("3. 最短距離:");
-    println!("   - 多始点BFSが効率的");
-    println!("   - 島1の全陸地からスタート");
-    println!("   - 最初に島2に到達した時点が最短");
-    println!();
-    println!("両方の手法で同じ結果が得られることを確認してください！");
-    
-    // デバッグ用: get_neighbors関数のテスト
-    println!("\nデバッグ: (1,1)の隣接マス:");
-    for (r, c) in get_neighbors(1, 1, 9, 9) {
-        println!("  ({}, {})", r, c);
-    }
+    println!("\n実装のポイント:");
+    println!("1. BinaryHeapは最大ヒープなので、Reverseで最小ヒープにする");
+    println!("2. 既に処理済みのノードはスキップ（重要な最適化）");
+    println!("3. u32::MAXを無限大として使用");
+    println!("4. 経路復元にはpreviousベクターを使用");
 }
